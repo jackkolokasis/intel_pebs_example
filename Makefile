@@ -3,11 +3,12 @@ CC = gcc
 CXX = g++
 
 # Compiler flags
-CFLAGS = -Wall -O3
+CFLAGS = -Wall -O3 -Werror
+LINK_FLAGS = -lpthread
 
 # Executable
 TARGET = test_pebs cache_misses cache_misses_samples count_loads \
-				 count_stores
+				 count_stores count_load_pebs
 
 # Directory for object files
 OBJ_DIR = obj
@@ -37,6 +38,9 @@ count_loads: src/count_loads.c
 
 count_stores: src/count_stores.c
 	$(CC) $(CFLAGS) $< -o $@
+
+count_load_pebs: src/count_stores_pebs.c
+	$(CC) $(CFLAGS) $< -o $@ $(LINK_FLAGS)
 
 clean:
 	rm -rf $(TARGET) $(OBJ_DIR)
