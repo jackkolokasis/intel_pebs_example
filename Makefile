@@ -8,8 +8,9 @@ LINK_FLAGS = -lpthread
 
 # Executable
 TARGET = test_pebs cache_misses cache_misses_samples count_loads \
-				 count_stores count_load_pebs
-
+				 count_stores count_load_pebs count_load_pebs_hierachy \
+				 count_store_pebs_hierachy
+ 
 # Directory for object files
 OBJ_DIR = obj
 
@@ -39,7 +40,13 @@ count_loads: src/count_loads.c
 count_stores: src/count_stores.c
 	$(CC) $(CFLAGS) $< -o $@
 
-count_load_pebs: src/count_stores_pebs.c
+count_load_pebs: src/count_loads_pebs.c
+	$(CC) $(CFLAGS) $< -o $@ $(LINK_FLAGS)
+
+count_load_pebs_hierachy: src/count_loads_pebs_hierarchy.c
+	$(CC) $(CFLAGS) $< -o $@ $(LINK_FLAGS)
+
+count_store_pebs_hierachy: src/count_stores_pebs_hierarchy.c
 	$(CC) $(CFLAGS) $< -o $@ $(LINK_FLAGS)
 
 clean:
