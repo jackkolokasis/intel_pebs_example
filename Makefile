@@ -50,4 +50,8 @@ count_store_pebs_hierachy: src/count_stores_pebs_hierarchy.c
 	$(CC) $(CFLAGS) $< -o $@ $(LINK_FLAGS)
 
 clean:
-	rm -rf $(TARGET) $(OBJ_DIR)
+	rm -rf $(TARGET) $(OBJ_DIR) *.out
+
+run:
+	./count_load_pebs_hierachy > load_pebs_hierarchy.out
+	./count_store_pebs_hierachy > store_pebs_hierarchy.out
