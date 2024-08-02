@@ -12,8 +12,9 @@
 #include <assert.h>
 #include <pthread.h>
 #include <signal.h>
+#include <sys/time.h>
 
-#define SAMPLE_PERIOD 10
+#define SAMPLE_PERIOD 19997
 #define PERF_PAGES (1 + (1 << 14))	// Has to be == 1+2^n
 
 int fd;
@@ -165,8 +166,9 @@ void handle_signal(int signal) {
 }
 
 int main() {
-  signal(SIGINT, handle_signal);
+  struct timeval start, end;
 
+  signal(SIGINT, handle_signal);
 
   size_t size = 10000000;
 
@@ -183,12 +185,23 @@ int main() {
 
   setup_pebs();
 
-  // store_memory_seq(array, size);
+  gettimeofday(&start, NULL);
+
+  store_memory_seq(array, size);
   store_memory_rand(array, size);
+
+  gettimeofday(&end, NULL);
 
   stop_pebs();
   close(fd);
   free(array);
+
+  // Calculate elapsed time
+  long seconds = end.tv_sec - start.tv_sec;
+  long microseconds = end.tv_usec - start.tv_usec;
+  double elapsed_time = seconds + microseconds * 1e-6;
+
+  printf("Elapsed time: %.6f seconds\n", elapsed_time);
 
   return 0;
 }
