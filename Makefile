@@ -7,7 +7,7 @@ CFLAGS = -Wall -O3 -Werror
 LDFLAGS = -lpthread
 
 # Executable
-TARGET = test_pebs cache_misses cache_misses_samples count_loads \
+TARGET = cache_misses cache_misses_samples count_loads \
 				 count_stores count_load_pebs count_load_pebs_hierachy \
 				 count_store_pebs_hierachy seq_read rand_read seq_write \
 				 rand_write
