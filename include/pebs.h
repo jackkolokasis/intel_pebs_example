@@ -4,16 +4,16 @@
 #include <linux/perf_event.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <vector>
+#include <cstdint>
+#include <tuple>
 
-#define SAMPLE_PERIOD 10000
 #define PERF_PAGES (1 + (1 << 14))	// Has to be == 1+2^n
 
 struct PerfSample {
   struct perf_event_header header;
   __u64	ip;
-  __u32 pid, tid;    /* PERF_SAMPLE_TID */
   __u64 addr;        /* PERF_SAMPLE_ADDR */
-  __u64 weight;      /* PERF_SAMPLE_WEIGHT */
   __u64 data_src;    /* PERF_SAMPLE_DATA_SRC */
 };
 
@@ -22,6 +22,7 @@ struct PebsArgs {
   volatile int *stop_thread;
   char *start_addr;
   char *end_addr;
+  std::vector<std::tuple<__u64, __u64, __u64, __u64>> *results;
 };
   
 class Pebs {
@@ -35,17 +36,19 @@ private:
   char *start_addr;                         //< Start address of the tracking memory area
   char *end_addr;                           //< End address of the tracking memory area
   PebsArgs *args;                           //< Pebs scanner thread arguments
+  std::vector<std::tuple<__u64, __u64, __u64, __u64>> *results;
 
   // The scanner thread iterates the pebs scanner finding new PEBS
   // records and check their addresses.
   static void* pebs_scan_thread(void* arg);
 
 public:
-  Pebs(char *array_start_addr, char *array_end_addr, bool load_ops);
+  Pebs(char *array_start_addr, char *array_end_addr, int sample_period, bool load_ops);
   ~Pebs();
 
   void start_pebs(void);
   void stop_pebs(void);
+  void print_addresses(void);
 };
 
 #endif // < PEBS_H

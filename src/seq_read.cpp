@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctime>
+#include <cstdlib>
+#include <cstdio>
+#include <unistd.h>
 #include <sys/time.h>
 #include "../include/pebs.h"
 
@@ -16,9 +19,28 @@ void load_memory_seq(int *array, size_t size) {
   }
 }
 
-int main() {
-  size_t size = 1000000000;
+int main(int argc, char *argv[]) {
+  size_t size = 100000000;
   char *start_addr, *end_addr;
+  bool use_pebs_events = false;
+  int sample_period = 0;
+  int opt;
+  Pebs *pebs = NULL;
+  
+  // Parsing command-line arguments
+  while ((opt = getopt(argc, argv, "p:e")) != -1) {
+    switch (opt) {
+      case 'p':
+        sample_period = std::atoi(optarg);
+        break;
+      case 'e':
+        use_pebs_events = true;
+        break;
+      default:
+        printf("Usage: %s -p <sample_period> [-e]\n", argv[0]); 
+        exit(EXIT_FAILURE);
+    }
+  }
 
   int *array = (int *) malloc(size * sizeof(int));
   start_addr = (char *) array;
@@ -33,7 +55,8 @@ int main() {
     array[i] = i;
   }
 
-  Pebs *pebs = new Pebs(start_addr, end_addr, true);
+  if (use_pebs_events)
+    pebs = new Pebs(start_addr, end_addr, sample_period, true);
   
   struct timeval start, end;
   gettimeofday(&start, NULL);
@@ -42,8 +65,11 @@ int main() {
   
   gettimeofday(&end, NULL);
 
-  pebs->stop_pebs();
-  delete pebs;
+  if (use_pebs_events) {
+    pebs->stop_pebs();
+    pebs->print_addresses();
+    delete pebs;
+  }
   
   // Calculate elapsed time
   long seconds = end.tv_sec - start.tv_sec;

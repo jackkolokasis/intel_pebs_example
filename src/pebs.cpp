@@ -22,6 +22,7 @@ void* Pebs::pebs_scan_thread(void* arg) {
   volatile int *stop_thread = args->stop_thread;
   char *start_addr = args->start_addr;
   char *end_addr = args->end_addr;
+  std::vector<std::tuple<__u64, __u64, __u64, __u64>> *results = args->results;
 
   cpu_set_t cpu_set;
   pthread_t thread;
@@ -54,9 +55,12 @@ void* Pebs::pebs_scan_thread(void* arg) {
         assert(ps != NULL);
 
         if (ps->addr != 0 && (char *) ps->addr >= start_addr && (char *) ps->addr < end_addr) {
-          printf("IP: %llx | Addr: %p | Hierarchy = 0x%llx | TLB Access = 0x%llx\n",
-                 ps->ip, (void *) ps->addr, ps->data_src & 0xf,
-                 (ps->data_src >> 12) & 0xF);
+          __u64 hierarchy = ps->data_src & 0xf; 
+          __u64 tlb_access = (ps->data_src >> 12) & 0xF; 
+          results->emplace_back(ps->ip, ps->addr, hierarchy, tlb_access);
+
+          //printf("IP: %llx | Addr: %p | Hierarchy = 0x%llx | TLB Access = 0x%llx\n",
+          //       ps->ip, (void *) ps->addr, ps->data_src & 0xf, (ps->data_src >> 12) & 0xF);
         }
       }
       data_tail += ph->size;
@@ -67,7 +71,8 @@ void* Pebs::pebs_scan_thread(void* arg) {
 }
 
 
-Pebs::Pebs(char *array_start_addr, char *array_end_addr, bool load_ops) {
+Pebs::Pebs(char *array_start_addr, char *array_end_addr,
+           int sample_period, bool load_ops) {
   int ret;
   
   printf("Setups pebs: start\n");
@@ -83,7 +88,7 @@ Pebs::Pebs(char *array_start_addr, char *array_end_addr, bool load_ops) {
   pe.exclude_callchain_kernel = 1;
   pe.exclude_callchain_user = 1;
   pe.precise_ip = 1;
-  pe.sample_period = SAMPLE_PERIOD;
+  pe.sample_period = sample_period;
   pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_WEIGHT \
     | PERF_SAMPLE_ADDR | PERF_SAMPLE_DATA_SRC;
 
@@ -104,8 +109,9 @@ Pebs::Pebs(char *array_start_addr, char *array_end_addr, bool load_ops) {
 
   start_addr = array_start_addr;
   end_addr = array_end_addr;
+  results = new std::vector<std::tuple<__u64, __u64, __u64, __u64>>();
 
-  args = new PebsArgs{pebs_buffer, &stop_thread, start_addr, end_addr};
+  args = new PebsArgs{pebs_buffer, &stop_thread, start_addr, end_addr, results};
 
   ret = pthread_create(&scan_thread, NULL, pebs_scan_thread, args);
   if (ret != 0) {
@@ -131,6 +137,22 @@ void Pebs::start_pebs(void) {
 
 Pebs::~Pebs() {
   delete args;
+  delete results;
   close(fd);
   munmap(pebs_buffer, mmap_size);
+}
+
+void Pebs::print_addresses(void) {
+
+  //for (std::vector<std::tuple<__u64, __u64, __u64, __u64>>::const_iterator it = results->begin(); it != results->end(); ++it) {
+  //  __u64 ip = std::get<0>(*it);
+  //  __u64 addr = std::get<1>(*it);
+  //  __u64 hierarchy = std::get<2>(*it);
+  //  __u64 tlb_access = std::get<3>(*it);
+
+  //  printf("IP: %llx | Addr: %p | Hierarchy = 0x%llx | TLB Access = 0x%llx\n",
+  //         ip, (void *) addr, hierarchy, tlb_access);
+  //}
+  printf("Number of samples = %lu\n", results->size());
+  
 }
