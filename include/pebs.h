@@ -49,6 +49,7 @@ public:
   void start_pebs(void);
   void stop_pebs(void);
   void print_addresses(void);
+  void print_num_samples(void);
 };
 
 #endif // < PEBS_H

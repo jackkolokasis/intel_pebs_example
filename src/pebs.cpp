@@ -90,8 +90,7 @@ Pebs::Pebs(char *array_start_addr, char *array_end_addr,
   pe.exclude_callchain_user = 1;
   pe.precise_ip = 1;
   pe.sample_period = sample_period;
-  pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_WEIGHT \
-    | PERF_SAMPLE_ADDR | PERF_SAMPLE_DATA_SRC;
+  pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_ADDR | PERF_SAMPLE_DATA_SRC;
 
   fd = perf_event_open(&pe, 0, -1, -1, 0);
   if (fd == -1) {
@@ -144,16 +143,17 @@ Pebs::~Pebs() {
 }
 
 void Pebs::print_addresses(void) {
+  for (std::vector<std::tuple<__u64, __u64, __u64, __u64>>::const_iterator it = results->begin(); it != results->end(); ++it) {
+    __u64 ip = std::get<0>(*it);
+    __u64 addr = std::get<1>(*it);
+    __u64 hierarchy = std::get<2>(*it);
+    __u64 tlb_access = std::get<3>(*it);
 
-  //for (std::vector<std::tuple<__u64, __u64, __u64, __u64>>::const_iterator it = results->begin(); it != results->end(); ++it) {
-  //  __u64 ip = std::get<0>(*it);
-  //  __u64 addr = std::get<1>(*it);
-  //  __u64 hierarchy = std::get<2>(*it);
-  //  __u64 tlb_access = std::get<3>(*it);
-
-  //  printf("IP: %llx | Addr: %p | Hierarchy = 0x%llx | TLB Access = 0x%llx\n",
-  //         ip, (void *) addr, hierarchy, tlb_access);
-  //}
-  printf("Number of samples = %lu\n", results->size());
+    printf("IP: %llx | Addr: %p | Hierarchy = 0x%llx | TLB Access = 0x%llx\n",
+           ip, (void *) addr, hierarchy, tlb_access);
+  }
+}
   
+void Pebs::print_num_samples(void) {
+  printf("Number of samples = %lu\n", results->size());
 }
