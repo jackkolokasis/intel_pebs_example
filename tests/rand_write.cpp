@@ -5,19 +5,17 @@
 #include <cstdio>
 #include <unistd.h>
 #include <sys/time.h>
-#include "../include/pebs.h"
+//#include "../include/pebs.h"
+#include <pebs.h>
 
-void load_memory_rand(int *array, size_t size) {
-  volatile int sum = 0;
+void store_memory_rand(int *array, size_t size) {
   srand(time(NULL));  // Initialize random number generator
 
   for (size_t i = 0; i < size; i++) {
     int index = rand() % size;  // Access a random index
-    sum += array[index];
-  }
+    int val = rand() % size;
 
-  if (sum == 0) {
-    printf("Sum is zero\n");
+    array[index] = val;
   }
 }
 
@@ -28,7 +26,7 @@ int main(int argc, char *argv[]) {
   int sample_period = 0;
   int opt;
   Pebs *pebs = NULL;
-
+  
   // Parsing command-line arguments
   while ((opt = getopt(argc, argv, "p:e")) != -1) {
     switch (opt) {
@@ -45,34 +43,30 @@ int main(int argc, char *argv[]) {
   }
 
   int *array = (int *) malloc(size * sizeof(int));
-  start_addr = (char *) array;
-  end_addr = (char *) (array + (size - 1));
-
   if (array == NULL) {
     perror("malloc");
     exit(EXIT_FAILURE);
   }
 
-  for (size_t i = 0; i < size; i++) {
-    array[i] = i;
-  }
+  start_addr = (char *) array;
+  end_addr = (char *) (array + (size - 1));
 
   if (use_pebs_events)
-    pebs = new Pebs(start_addr, end_addr, sample_period, true);
+    pebs = new Pebs(start_addr, end_addr, sample_period, false);
   
   struct timeval start, end;
   gettimeofday(&start, NULL);
 
-  load_memory_rand(array, size);
-
+  store_memory_rand(array, size);
+  
   gettimeofday(&end, NULL);
-
+  
   if (use_pebs_events) {
     pebs->stop_pebs();
     pebs->print_addresses();
     delete pebs;
   }
-
+  
   // Calculate elapsed time
   long seconds = end.tv_sec - start.tv_sec;
   long microseconds = end.tv_usec - start.tv_usec;

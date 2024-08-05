@@ -54,7 +54,8 @@ void* Pebs::pebs_scan_thread(void* arg) {
         ps = (PerfSample *) ph;
         assert(ps != NULL);
 
-        if (ps->addr != 0 && (char *) ps->addr >= start_addr && (char *) ps->addr < end_addr) {
+        //if (ps->addr != 0 && (char *) ps->addr >= start_addr && (char *) ps->addr < end_addr) {
+        if (ps->addr != 0) {
           __u64 hierarchy = ps->data_src & 0xf; 
           __u64 tlb_access = (ps->data_src >> 12) & 0xF; 
           results->emplace_back(ps->ip, ps->addr, hierarchy, tlb_access);

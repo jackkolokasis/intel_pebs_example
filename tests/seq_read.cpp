@@ -5,11 +5,18 @@
 #include <cstdio>
 #include <unistd.h>
 #include <sys/time.h>
-#include "../include/pebs.h"
+//#include "../include/pebs.h"
+#include <pebs.h>
 
-void store_memory_seq(int *array, size_t size) {
+void load_memory_seq(int *array, size_t size) {
+  volatile int sum = 0;
+
   for (size_t i = 0; i < size; i++) {
-    array[i] = i;
+    sum += array[i];
+  }
+
+  if (sum == 0) {
+    printf("Sum is zero\n");
   }
 }
 
@@ -37,22 +44,26 @@ int main(int argc, char *argv[]) {
   }
 
   int *array = (int *) malloc(size * sizeof(int));
+  start_addr = (char *) array;
+  end_addr = (char *) (array + (size - 1));
+
   if (array == NULL) {
     perror("malloc");
     exit(EXIT_FAILURE);
   }
 
-  start_addr = (char *) array;
-  end_addr = (char *) (array + (size - 1));
+  for (size_t i = 0; i < size; i++) {
+    array[i] = i;
+  }
 
   if (use_pebs_events)
-    pebs = new Pebs(start_addr, end_addr, sample_period, false);
+    pebs = new Pebs(start_addr, end_addr, sample_period, true);
   
   struct timeval start, end;
   gettimeofday(&start, NULL);
 
-  store_memory_seq(array, size);
-
+  load_memory_seq(array, size);
+  
   gettimeofday(&end, NULL);
 
   if (use_pebs_events) {

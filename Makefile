@@ -2,75 +2,44 @@
 CC = gcc
 CXX = g++
 
-# Compiler flags
-CFLAGS = -Wall -O3 -Werror
-LDFLAGS = -lpthread
-
-# Executable
-TARGET = cache_misses cache_misses_samples count_loads \
-				 count_stores count_load_pebs count_load_pebs_hierachy \
-				 count_store_pebs_hierachy seq_read rand_read seq_write \
-				 rand_write
- 
-# Directory for object files
+SRC_DIR = src
+INC_DIR = include
 OBJ_DIR = obj
+LIB_DIR = lib
+TEST_DIR = tests
+BIN_DIR = bin
+
+# Files
+SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
+OBJ_FILES = $(SRC_FILES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+TARGET_LIB = $(LIB_DIR)/libpebs.so
+TEST_FILES = $(wildcard $(TEST_DIR)/*.cpp)
+TEST_EXECUTABLES = $(TEST_FILES:$(TEST_DIR)/%.cpp=$(BIN_DIR)/%)
+
+CXXFLAGS = -fPIC -O3 -I$(INC_DIR)
+LDFLAGS = -shared -lpthread
+TEST_LDFLAGS = -L$(LIB_DIR) -lpebs -lpthread
+
+# Create necessary directories
+$(shell mkdir -p $(OBJ_DIR) $(LIB_DIR) $(BIN_DIR))
 
 # Default target
-all: $(TARGET)
+all: $(TARGET_LIB) $(TEST_EXECUTABLES)
 
-# Link the object files to create the executable
-rand_read: $(OBJ_DIR)/pebs.o $(OBJ_DIR)/rand_read.o
-	$(CXX) $^ -o $@ -lpthread
+# Rule to build the shared library
+$(TARGET_LIB): $(OBJ_FILES)
+	$(CXX) $(LDFLAGS) -o $@ $^
 
-seq_read: $(OBJ_DIR)/pebs.o $(OBJ_DIR)/seq_read.o
-	$(CXX) $^ -o $@ -lpthread
+# Rule to compile source files to object files
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-seq_write: $(OBJ_DIR)/pebs.o $(OBJ_DIR)/seq_write.o
-	$(CXX) $^ -o $@ -lpthread
-
-rand_write: $(OBJ_DIR)/pebs.o $(OBJ_DIR)/rand_write.o
-	$(CXX) $^ -o $@ -lpthread
-
-$(OBJ_DIR)/rand_write.o: src/rand_write.cpp
-	$(CXX) $(CFLAGS) -c $< -o $@
-
-$(OBJ_DIR)/seq_write.o: src/seq_write.cpp
-	$(CXX) $(CFLAGS) -c $< -o $@
-
-$(OBJ_DIR)/rand_read.o: src/rand_read.cpp
-	$(CXX) $(CFLAGS) -c $< -o $@
-
-$(OBJ_DIR)/seq_read.o: src/seq_read.cpp
-	$(CXX) $(CFLAGS) -c $< -o $@
-
-$(OBJ_DIR)/pebs.o: src/pebs.cpp include/pebs.h
-	@mkdir -p $(OBJ_DIR)
-	$(CXX) $(CFLAGS) -c $< -o $@
-
-cache_misses: src/cache_miss_benchmark.c
-	$(CC) $(CFLAGS) $< -o $@
-
-cache_misses_samples: src/cache_miss_sample_benchmark.c
-	$(CC) $(CFLAGS) $< -o $@
-
-count_loads: src/count_loads.c
-	$(CC) $(CFLAGS) $< -o $@
-
-count_stores: src/count_stores.c
-	$(CC) $(CFLAGS) $< -o $@
-
-count_load_pebs: src/count_loads_pebs.c
-	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
-
-count_load_pebs_hierachy: src/count_loads_pebs_hierarchy.c
-	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
-
-count_store_pebs_hierachy: src/count_stores_pebs_hierarchy.c
-	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
+# Rule to compile testfiles
+$(BIN_DIR)/%: $(TEST_DIR)/%.cpp $(TARGET_LIB)
+	$(CXX) -O3 -I$(INC_DIR) -o $@ $< $(TEST_LDFLAGS)
 
 clean:
-	rm -rf $(TARGET) $(OBJ_DIR) *.out
+	rm -rf $(OBJ_DIR) $(LIB_DIR) $(BIN_DIR)
 
-run:
-	./count_load_pebs_hierachy > load_pebs_hierarchy.out
-	./count_store_pebs_hierachy > store_pebs_hierarchy.out
+# PHONY targets
+.PHONY: all clean
