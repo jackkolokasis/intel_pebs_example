@@ -59,9 +59,6 @@ void* Pebs::pebs_scan_thread(void* arg) {
           __u64 hierarchy = ps->data_src & 0xf; 
           __u64 tlb_access = (ps->data_src >> 12) & 0xF; 
           results->emplace_back(ps->ip, ps->addr, hierarchy, tlb_access);
-
-          //printf("IP: %llx | Addr: %p | Hierarchy = 0x%llx | TLB Access = 0x%llx\n",
-          //       ps->ip, (void *) ps->addr, ps->data_src & 0xf, (ps->data_src >> 12) & 0xF);
         }
       }
       data_tail += ph->size;
