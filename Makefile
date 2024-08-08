@@ -16,7 +16,7 @@ TARGET_LIB = $(LIB_DIR)/libpebs.so
 TEST_FILES = $(wildcard $(TEST_DIR)/*.cpp)
 TEST_EXECUTABLES = $(TEST_FILES:$(TEST_DIR)/%.cpp=$(BIN_DIR)/%)
 
-CXXFLAGS = -fPIC -O3 -I$(INC_DIR)
+CXXFLAGS = -fPIC -O2 -I$(INC_DIR)
 LDFLAGS = -shared -lpthread
 TEST_LDFLAGS = -L$(LIB_DIR) -lpebs -lpthread
 
@@ -36,7 +36,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 
 # Rule to compile testfiles
 $(BIN_DIR)/%: $(TEST_DIR)/%.cpp $(TARGET_LIB)
-	$(CXX) -O3 -I$(INC_DIR) -o $@ $< $(TEST_LDFLAGS)
+	$(CXX) -O2 -I$(INC_DIR) -o $@ $< $(TEST_LDFLAGS)
 
 clean:
 	rm -rf $(OBJ_DIR) $(LIB_DIR) $(BIN_DIR)
