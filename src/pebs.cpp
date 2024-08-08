@@ -50,17 +50,32 @@ void* Pebs::pebs_scan_thread(void* arg) {
     while (data_tail != data_head) {
       struct perf_event_header *ph = (struct perf_event_header *) (pbuf + (data_tail % metadata_page->data_size));
       PerfSample* ps;
-      if (ph->type == PERF_RECORD_SAMPLE) {
-        ps = (PerfSample *) ph;
-        assert(ps != NULL);
 
-        //if (ps->addr != 0 && (char *) ps->addr >= start_addr && (char *) ps->addr < end_addr) {
-        if (ps->addr != 0) {
-          __u64 hierarchy = ps->data_src & 0xf; 
-          __u64 tlb_access = (ps->data_src >> 12) & 0xF; 
-          results->emplace_back(ps->ip, ps->addr, hierarchy, tlb_access);
-        }
+      switch (ph->type) {
+        case PERF_RECORD_SAMPLE:
+          ps = (PerfSample *) ph;
+          assert(ps != NULL);
+          //if (ps->addr != 0 && (char *) ps->addr >= start_addr && (char *) ps->addr < end_addr) {
+          if (ps->addr != 0) {
+            __u64 hierarchy = ps->data_src & 0xf; 
+            __u64 tlb_access = (ps->data_src >> 12) & 0xF; 
+            results->emplace_back(ps->ip, ps->addr, hierarchy, tlb_access);
+            break;
+          }
+
+          printf("Address is null\n");
+          break;
+        case PERF_RECORD_THROTTLE:
+          printf("Type = %d: Throttle\n", ph->type);
+          break;
+        case PERF_RECORD_UNTHROTTLE:
+          printf("Type = %d : Unthrottle\n", ph->type);
+          break;
+        default:
+          printf("Type = %d\n", ph->type);
+          break;
       }
+
       data_tail += ph->size;
       metadata_page->data_tail = data_tail;
     }
